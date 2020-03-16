@@ -1,9 +1,8 @@
-//$ bin "Win64/r8bfreesrc"
+///$ bin "Win64/r8bfreesrc"
 
 #include "/libvox/Sources/Core/AppMain.h"
 #include "/libvox/Sources/Other/CWaveFile.h"
 #include "../CDSPResampler.h"
-#include <stdint.h>
 
 /**
  * @file r8bfreesrc.cpp
@@ -15,16 +14,18 @@
  * pseudo-code demonstrating the use of the library. Here you can find an
  * example implementation of the simplest sample rate converter utility.
  *
- * r8brain-free-src Copyright (c) 2013-2018 Aleksey Vaneev
+ * r8brain-free-src Copyright (c) 2013-2019 Aleksey Vaneev
  * See the "License.txt" file for license.
  */
 
 VOXMAIN
 {
 	Args.setProgramDescription( "This utility program perform sample rate "
-		"conversion of the source WAV sound file." );
+		"conversion of the source WAV/Wave64/AIF sound file." );
 
-	Args.addReqArg( argtFileName, "in-file", "The input WAV filename." );
+	Args.addReqArg( argtFileName, "in-file",
+		"The input WAV/Wave64/AIF filename." );
+
 	Args.addReqArg( argtFileName, "out-file", "The output WAV filename." );
 	Args.addReqArg( argtDouble, "out-sample-rate", "The output sample rate "
 		"(e.g. 96000)." );
@@ -45,8 +46,9 @@ VOXMAIN
 			"The specified output sample rate is invalid." );
 	}
 
-	const double d = ( OutSampleRate > inf.SampleRate ?
-		OutSampleRate / inf.SampleRate : inf.SampleRate / OutSampleRate );
+	const double InSampleRate = inf.SampleRate;
+	const double d = ( OutSampleRate > InSampleRate ?
+		OutSampleRate / InSampleRate : InSampleRate / OutSampleRate );
 
 	if( d >= ( 1 << 29 ))
 	{
@@ -58,6 +60,9 @@ VOXMAIN
 	CWaveFile outf;
 	outf.inheritFormat( inf );
 	outf.SampleRate = OutSampleRate;
+	outf.inheritCuePoints( inf );
+	outf.inheritInfo( inf );
+
 	VOXCHECK( outf.saveFile( *Args.getArgValue( "out-file" ).ValueStr ));
 
 	const int InBufCapacity = 2048;
@@ -80,15 +85,16 @@ VOXMAIN
 	{
 		InBufs[ i ].alloc( InBufCapacity );
 
-		Resamps[ i ] = new r8b :: CDSPResampler24( inf.SampleRate,
+		Resamps[ i ] = new r8b :: CDSPResampler24( InSampleRate,
 			OutSampleRate, InBufCapacity, tb );
 	}
 
 	int64_t ol = (int64_t) ( inf.SampleCount * OutSampleRate /
-		inf.SampleRate );
+		InSampleRate );
 
 	int64_t ool = 0;
 	double srct = 0.0;
+	CArray< double* > opp( inf.ChannelCount );
 
 	while( ol > 0 )
 	{
@@ -105,7 +111,6 @@ VOXMAIN
 			}
 		}
 
-		double* opp[ inf.ChannelCount ];
 		int WriteCount; // At initial steps this variable can be equal to 0
 			// after resampler. Same number for all channels.
 
@@ -125,7 +130,7 @@ VOXMAIN
 			WriteCount = (int) ol;
 		}
 
-		outf.writeData( opp, WriteCount );
+		VOXCHECK( outf.writeData( &opp[ 0 ], WriteCount ));
 		ol -= WriteCount;
 	}
 

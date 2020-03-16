@@ -9,7 +9,7 @@
  * converter. This inclusion file contains implementations of several small
  * utility classes and functions used by the library.
  *
- * r8brain-free-src Copyright (c) 2013-2018 Aleksey Vaneev
+ * r8brain-free-src Copyright (c) 2013-2019 Aleksey Vaneev
  * See the "License.txt" file for license.
  *
  * @mainpage
@@ -30,7 +30,7 @@
  *
  * The MIT License (MIT)
  * 
- * r8brain-free-src Copyright (c) 2013-2018 Aleksey Vaneev
+ * r8brain-free-src Copyright (c) 2013-2019 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -54,13 +54,14 @@
  * following way: "Sample rate converter designed by Aleksey Vaneev of
  * Voxengo"
  *
- * @version 1.7
+ * @version 4.6
  */
 
 #ifndef R8BBASE_INCLUDED
 #define R8BBASE_INCLUDED
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "r8bconf.h"
@@ -78,6 +79,12 @@
  */
 
 namespace r8b {
+
+/**
+ * Macro defines r8brain-free-src version string.
+ */
+
+#define R8B_VERSION "4.6"
 
 #if !defined( M_PI )
 	/**
@@ -261,6 +268,9 @@ public:
  * This class manages memory space only - it does not perform element class
  * construction nor destruction operations.
  *
+ * This class applies 256-bit memory address alignment to the allocated data
+ * block.
+ *
  * @param T The class of the stored elements (e.g. "double").
  */
 
@@ -271,7 +281,8 @@ class CFixedBuffer : public R8B_MEMALLOCCLASS
 
 public:
 	CFixedBuffer()
-		: Data( NULL )
+		: Data0( NULL )
+		, Data( NULL )
 	{
 	}
 
@@ -286,14 +297,15 @@ public:
 	{
 		R8BASSERT( Capacity > 0 || Capacity == 0 );
 
-		Data = (T*) allocmem( Capacity * sizeof( T ));
+		Data0 = allocmem( Capacity * sizeof( T ) + Alignment );
+		Data = (T*) alignptr( Data0, Alignment );
 
-		R8BASSERT( Data != NULL || Capacity == 0 );
+		R8BASSERT( Data0 != NULL || Capacity == 0 );
 	}
 
 	~CFixedBuffer()
 	{
-		freemem( Data );
+		freemem( Data0 );
 	}
 
 	/**
@@ -307,10 +319,44 @@ public:
 	{
 		R8BASSERT( Capacity > 0 || Capacity == 0 );
 
-		freemem( Data );
-		Data = (T*) allocmem( Capacity * sizeof( T ));
+		freemem( Data0 );
+		Data0 = allocmem( Capacity * sizeof( T ) + Alignment );
+		Data = (T*) alignptr( Data0, Alignment );
 
-		R8BASSERT( Data != NULL || Capacity == 0 );
+		R8BASSERT( Data0 != NULL || Capacity == 0 );
+	}
+
+	/**
+	 * Function reallocates memory so that the specified number of elements of
+	 * type T can be stored in *this buffer object. Previously allocated data
+	 * is copied to the new memory buffer.
+	 *
+	 * @param PrevCapacity Previous capacity of *this buffer.
+	 * @param NewCapacity Storage for this number of elements to allocate.
+	 */
+
+	void realloc( const int PrevCapacity, const int NewCapacity )
+	{
+		R8BASSERT( PrevCapacity >= 0 );
+		R8BASSERT( NewCapacity >= 0 );
+
+		void* const NewData0 = allocmem( NewCapacity * sizeof( T ) +
+			Alignment );
+
+		T* const NewData = (T*) alignptr( NewData0, Alignment );
+		const size_t CopySize = ( PrevCapacity > NewCapacity ?
+			NewCapacity : PrevCapacity ) * sizeof( T );
+
+		if( CopySize > 0 )
+		{
+			memcpy( NewData, Data, CopySize );
+		}
+
+		freemem( Data0 );
+		Data0 = NewData0;
+		Data = NewData;
+
+		R8BASSERT( Data0 != NULL || NewCapacity == 0 );
 	}
 
 	/**
@@ -319,7 +365,8 @@ public:
 
 	void free()
 	{
-		freemem( Data );
+		freemem( Data0 );
+		Data0 = NULL;
 		Data = NULL;
 	}
 
@@ -344,8 +391,27 @@ public:
 	}
 
 private:
-	T* Data; ///< Element buffer pointer.
+	static const size_t Alignment = 32; ///< Data buffer alignment, in bytes.
 		///<
+	void* Data0; ///< Buffer pointer, original unaligned.
+		///<
+	T* Data; ///< Element buffer pointer, aligned.
+		///<
+
+	/**
+	 * This macro forces provided pointer ptr to be aligned to align bytes.
+	 * Works with power-of-2 alignments only. If no alignment is necessary,
+	 * "align" bytes will be added to the pointer value.
+	 *
+	 * @tparam Tp Pointer type.
+	 */
+
+	template< class Tp >
+	inline Tp alignptr( const Tp ptr, const uintptr_t align )
+	{
+		return( (Tp) ( (uintptr_t) ptr + align -
+			( (uintptr_t) ptr & ( align - 1 ))) );
+	}
 };
 
 /**
@@ -861,7 +927,7 @@ inline void calcFIRFilterResponseAndGroupDelay( const double* const flt,
 	}
 
 	const double thd = ths[ 1 ] - ths[ 0 ];
-	gd = ( ph1[ 1 ] - ph1[ 0 ]) / -thd;
+	gd = ( ph1[ 1 ] - ph1[ 0 ]) / thd;
 }
 
 /**
