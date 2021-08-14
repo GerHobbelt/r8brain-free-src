@@ -16,6 +16,9 @@
 #ifndef R8BCONF_INCLUDED
 #define R8BCONF_INCLUDED
 
+// Enable PFFFT library
+#define R8B_PFFFT_DOUBLE 1
+
 #if defined( _WIN32 ) || defined( _WIN64 )
 	#define R8B_WIN 1
 #elif defined( __APPLE__ )

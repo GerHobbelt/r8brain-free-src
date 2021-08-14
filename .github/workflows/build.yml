@@ -1,0 +1,81 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-macos:
+    runs-on: macos-10.15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Compile
+        run: |
+          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c pffft.cpp -o pffft.o
+          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c r8bbase.cpp -o r8bbase.o
+          ${{ env.AR }} rcs libr8brain-macos10.a pffft.o r8bbase.o
+        env:
+          AR: ar
+          CPP: clang
+          CPPFLAGS: -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-output-macos10
+          path: |
+            libr8brain-macos10.a
+            LICENSE
+
+  build-android:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Compile
+        run: |
+          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c pffft.cpp -o pffft.o
+          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c r8bbase.cpp -o r8bbase.o
+          ${{ env.AR }} rcs libr8brain-android30.a pffft.o r8bbase.o
+        env:
+          AR: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar
+          CPP: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          CPPFLAGS: -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-output-android30
+          path: libr8brain-android30.a
+
+  create-release:
+    runs-on: ubuntu-20.04
+    needs: [build-macos, build-android]
+    steps:
+      - name: Get build output macos10
+        uses: actions/download-artifact@v2
+        with:
+          name: build-output-macos10
+
+      - name: Get build output android30
+        uses: actions/download-artifact@v2
+        with:
+          name: build-output-android30
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            libr8brain-macos10.a
+            libr8brain-android30.a
+            LICENSE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
