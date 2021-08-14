@@ -16,12 +16,14 @@ jobs:
 
       - name: Compile
         run: |
-          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c pffft.cpp -o pffft.o
+          ${{ env.CC }} ${{ env.CFLAGS }} -c pffft_double/pffft_double.c -o pffft_double.o
           ${{ env.CPP }} ${{ env.CPPFLAGS }} -c r8bbase.cpp -o r8bbase.o
-          ${{ env.AR }} rcs libr8brain-macos10.a pffft.o r8bbase.o
+          ${{ env.AR }} rcs libr8brain-macos10.a pffft_double.o r8bbase.o
         env:
           AR: ar
+          CC: clang
           CPP: clang
+          CFLAGS: -std=c17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
           CPPFLAGS: -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
 
       - name: Upload build output
@@ -42,12 +44,14 @@ jobs:
 
       - name: Compile
         run: |
-          ${{ env.CPP }} ${{ env.CPPFLAGS }} -c pffft.cpp -o pffft.o
+          ${{ env.CC }} ${{ env.CFLAGS }} -c pffft_double/pffft_double.c -o pffft_double.o
           ${{ env.CPP }} ${{ env.CPPFLAGS }} -c r8bbase.cpp -o r8bbase.o
-          ${{ env.AR }} rcs libr8brain-android30.a pffft.o r8bbase.o
+          ${{ env.AR }} rcs libr8brain-android30.a pffft_double.o r8bbase.o
         env:
           AR: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar
+          CC: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
           CPP: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          CFLAGS: -std=c17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
           CPPFLAGS: -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
 
       - name: Upload build output
