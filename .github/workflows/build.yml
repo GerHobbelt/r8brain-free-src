@@ -26,11 +26,16 @@ jobs:
           CFLAGS: -std=c17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
           CPPFLAGS: -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
 
+      - name: Prepare output
+        run: |
+          zip include.zip *.h
+
       - name: Upload build output
         uses: actions/upload-artifact@v2
         with:
           name: build-output-macos10
           path: |
+            include.zip
             libr8brain-macos10.a
             LICENSE
 
@@ -78,6 +83,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
+            include.zip
             libr8brain-macos10.a
             libr8brain-android30.a
             LICENSE
