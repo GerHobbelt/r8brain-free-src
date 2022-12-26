@@ -16,6 +16,9 @@
 #ifndef R8BCONF_INCLUDED
 #define R8BCONF_INCLUDED
 
+// Enable PFFFT library
+#define R8B_PFFFT_DOUBLE 1
+
 #if !defined( R8BASSERT )
 	/**
 	 * Assertion macro used to check for certain run-time conditions. By
