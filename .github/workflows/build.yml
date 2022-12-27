@@ -15,7 +15,7 @@ jobs:
           persist-credentials: false
 
       - name: Compile
-        run: make
+        run: make -f macos.mk
 
       - name: Prepare output
         run: |
@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       - name: Compile
-        run: make
+        run: make -f macos.mk
 
       - name: Prepare output
         run: mv libr8brain.a libr8brain-macos-arm64.a
@@ -60,13 +60,7 @@ jobs:
           persist-credentials: false
 
       - name: Compile
-        run: |
-          ln -sf $ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk-bundle
-          make
-        env:
-          AR: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          CC: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
-          CPP: /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+        run: make -f android30.mk
 
       - name: Prepare output
         run: mv libr8brain.a libr8brain-android30.a
