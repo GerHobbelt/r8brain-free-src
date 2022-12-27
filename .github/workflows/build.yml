@@ -19,7 +19,7 @@ jobs:
 
       - name: Prepare output
         run: |
-          zip include.zip *.h
+          zip include.zip *.h pffft_double/pffft_double.h *.inc
           mv libr8brain.a libr8brain-macos10.a
 
       - name: Upload build output
