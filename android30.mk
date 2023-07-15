@@ -13,7 +13,7 @@ AR = $(TOOLCHAIN)/bin/llvm-ar
 CFLAGS = -std=c17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
 CPPFLAGS = -std=c++17 -O3 -fstrict-aliasing -pedantic -Wall -Wextra
 
-TARGET = libr8brain.a
+TARGET = libr8brain-android30.a
 SRCSC = pffft_double/pffft_double.c
 SRCSCPP = r8bbase.cpp
 OBJS = $(subst .c,.o,$(SRCSC)) $(subst .cpp,.o,$(SRCSCPP))
@@ -30,6 +30,4 @@ $(TARGET): $(OBJS)
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	rm -f \
-		$(subst src,obj,$(OBJS)) \
-		$(TARGET) \
+	rm -f $(subst src,obj,$(OBJS))
